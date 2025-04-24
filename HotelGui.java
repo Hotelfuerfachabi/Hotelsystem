@@ -78,16 +78,22 @@ public class HotelGui extends JFrame {
         // Genehmigte Buchungen Panel
         JPanel genehmigtePanel = new JPanel(new BorderLayout());
         genehmigteBuchungenTabelle = new JTable();
-        genehmigteBuchungenModel = new DefaultTableModel(new String[]{"Buchungsnr.", "Gast", "Zimmer", "Nächte", "Preis", "Status"}, 0);
+        genehmigteBuchungenModel = new DefaultTableModel(new String[]{"Buchungsnr.", "Datum", "Zimmer", "Nächte", "Preis", "Status", "Löschen"}, 0);
         genehmigteBuchungenTabelle.setModel(genehmigteBuchungenModel);
         genehmigtePanel.add(new JScrollPane(genehmigteBuchungenTabelle), BorderLayout.CENTER);
+        JButton deleteGenehmigteButton = new JButton("Buchung löschen");
+        deleteGenehmigteButton.addActionListener(e -> buchungLoeschenGenehmigtAbgelehnt("Genehmigt"));
+        genehmigtePanel.add(deleteGenehmigteButton, BorderLayout.SOUTH);
 
         // Abgelehnte Buchungen Panel
         JPanel abgelehntePanel = new JPanel(new BorderLayout());
         abgelehnteBuchungenTabelle = new JTable();
-        abgelehnteBuchungenModel = new DefaultTableModel(new String[]{"Buchungsnr.", "Gast", "Zimmer", "Nächte", "Preis", "Status"}, 0);
+        abgelehnteBuchungenModel = new DefaultTableModel(new String[]{"Buchungsnr.", "Datum", "Zimmer", "Nächte", "Preis", "Status", "Löschen"}, 0);
         abgelehnteBuchungenTabelle.setModel(abgelehnteBuchungenModel);
         abgelehntePanel.add(new JScrollPane(abgelehnteBuchungenTabelle), BorderLayout.CENTER);
+        JButton deleteAbgelehnteButton = new JButton("Buchung löschen");
+        deleteAbgelehnteButton.addActionListener(e -> buchungLoeschenGenehmigtAbgelehnt("Abgelehnt"));
+        abgelehntePanel.add(deleteAbgelehnteButton, BorderLayout.SOUTH);
 
         // Tabs
         tabbedPane.addTab("Gäste", gaestePanel);
@@ -185,14 +191,27 @@ public class HotelGui extends JFrame {
             int zimmerIndex = zimmerBox.getSelectedIndex();
             int naechte = Integer.parseInt(naechteField.getText());
 
-            Gast gast = gaesteListe.get(gastIndex);
-            Zimmer zimmer = zimmerListe.get(zimmerIndex);
-            float preis = zimmer.getPPNacht() * naechte;
+            Gast g = gaesteListe.get(gastIndex);
+            Zimmer z = zimmerListe.get(zimmerIndex);
+            float preis = z.getPPNacht() * naechte;
 
+            // Buchung erstellen
             Buchung buchung = new Buchung(buchungsListe.size() + 1, new Datum(new Date()), naechte, preis, "Offen", "Kreditkarte");
-            buchungsListe.add(buchung);
 
-            buchungModel.addRow(new Object[]{buchung.getBuchungsnummer(), gast.getName(), zimmer.getNummer(), naechte, preis, buchung.getStatus()});
+            // Gast und Zimmer zuweisen
+            buchung.setGast(g);
+            buchung.setZimmer(z);
+
+            // Buchung zur Liste hinzufügen und Tabelle aktualisieren
+            buchungsListe.add(buchung);
+            buchungModel.addRow(new Object[]{
+                    buchung.getBuchungsnummer(),
+                    buchung.getGast().getName(),  // Hier wird der Name des Gastes angezeigt
+                    buchung.getZimmer().getNummer(),
+                    buchung.getAnzNächte(),
+                    buchung.getGesPreis(),
+                    buchung.getStatus()
+            });
         }
     }
 
@@ -202,6 +221,20 @@ public class HotelGui extends JFrame {
             int buchungsnummer = (int) buchungModel.getValueAt(selectedRow, 0);
             buchungsListe.removeIf(b -> b.getBuchungsnummer() == buchungsnummer);
             buchungModel.removeRow(selectedRow);
+        }
+    }
+
+    private void buchungLoeschenGenehmigtAbgelehnt(String status) {
+        JTable tabelle = status.equals("Genehmigt") ? genehmigteBuchungenTabelle : abgelehnteBuchungenTabelle;
+        DefaultTableModel model = status.equals("Genehmigt") ? genehmigteBuchungenModel : abgelehnteBuchungenModel;
+
+        int selectedRow = tabelle.getSelectedRow();
+        if (selectedRow != -1) {
+            int buchungsnummer = (int) model.getValueAt(selectedRow, 0);
+            buchungsListe.removeIf(b -> b.getBuchungsnummer() == buchungsnummer);
+            model.removeRow(selectedRow);
+        } else {
+            JOptionPane.showMessageDialog(null, "Bitte wählen Sie eine Buchung zum Löschen aus!");
         }
     }
 

@@ -4,43 +4,62 @@ public class Buchung {
     private int anzNächte;
     private float gesPreis;
     private String status;
-    private String zahlungsmethode;
-    private boolean genehmigt; // Neues Feld zur Anzeige des Genehmigungsstatus
+    private String zahlungsart;
+    private Gast gast;
+    private Zimmer zimmer;
 
-    public Buchung(int buchungsnummer, Datum datum, int anzNächte, float gesPreis, String status, String zahlungsmethode) {
+    // Konstruktor, der alle Felder initialisiert
+    public Buchung(int buchungsnummer, Datum datum, int anzNächte, float gesPreis, String status, String zahlungsart) {
         this.buchungsnummer = buchungsnummer;
         this.datum = datum;
         this.anzNächte = anzNächte;
         this.gesPreis = gesPreis;
         this.status = status;
-        this.zahlungsmethode = zahlungsmethode;
-        this.genehmigt = false;  // Standardmäßig nicht genehmigt
+        this.zahlungsart = zahlungsart;
     }
 
-    public int getBuchungsnummer() { return buchungsnummer; }
-    public Datum getDatum() { return datum; }
-    public int getAnzNächte() { return anzNächte; }
-    public float getGesPreis() { return gesPreis; }
-    public String getStatus() { return status; }
-    public String getZahlungsmethode() { return zahlungsmethode; }
-    public boolean isGenehmigt() { return genehmigt; }
-
-    public void setZahlungsmethode(String methode) { this.zahlungsmethode = methode; }
-    public void setStatus(String status) { this.status = status; }
-
-    // Methode zur Genehmigung der Buchung
-    public void genehmigeBuchung() {
-        this.genehmigt = true;
-        this.status = "Genehmigt";
+    // Getter und Setter
+    public int getBuchungsnummer() {
+        return buchungsnummer;
     }
 
-    // Methode zum Ablehnen der Buchung
-    public void lehneBuchungAb() {
-        this.genehmigt = false;
-        this.status = "Abgelehnt";
+    public Datum getDatum() {
+        return datum;
     }
 
-    public float berechneGesamtpreis() {
-        return gesPreis * anzNächte;
+    public int getAnzNächte() {
+        return anzNächte;
+    }
+
+    public float getGesPreis() {
+        return gesPreis;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getZahlungsart() {
+        return zahlungsart;
+    }
+
+    public Gast getGast() {
+        return gast;
+    }
+
+    public void setGast(Gast gast) {
+        this.gast = gast;
+    }
+
+    public Zimmer getZimmer() {
+        return zimmer;
+    }
+
+    public void setZimmer(Zimmer zimmer) {
+        this.zimmer = zimmer;
     }
 }
