@@ -255,6 +255,6 @@ public class HotelGui extends JFrame {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(HotelGui::new);
+        SwingUtilities.invokeLater(() -> new HotelGui());
     }
 }
