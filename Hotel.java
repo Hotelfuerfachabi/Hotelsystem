@@ -36,11 +36,3 @@ public class Hotel {
         return (float) belegteZimmer / anzZimmer * 100;
     }
 }
-
-    public float berechneAuslastung(){
-        int belegteZimmer = 0;
-        for (Zimmer z : zimmerListe) {
-            if (!z.isVerfuegbar()) belegteZimmer++;
-        }
-        return (float) belegteZimmer / anzZimmer * 100;
-    }
