@@ -1,20 +1,20 @@
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.*;
 import java.util.ArrayList;
+import java.util.Date;
 
 public class HotelGui extends JFrame {
     private ArrayList<Gast> gaesteListe = new ArrayList<>();
     private ArrayList<Zimmer> zimmerListe = new ArrayList<>();
     private ArrayList<Buchung> buchungsListe = new ArrayList<>();
 
-    private DefaultTableModel gaesteModel, zimmerModel, buchungModel;
-    private JTable gaesteTabelle;
+    private DefaultTableModel gaesteModel, zimmerModel, buchungModel, genehmigteBuchungenModel, abgelehnteBuchungenModel;
+    private JTable gaesteTabelle, zimmerTabelle, buchungTabelle, genehmigteBuchungenTabelle, abgelehnteBuchungenTabelle;
 
     public HotelGui() {
         setTitle("Hotel Verwaltung");
-        setSize(600, 500);
+        setSize(900, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
@@ -39,26 +39,62 @@ public class HotelGui extends JFrame {
         // Zimmer Panel
         JPanel zimmerPanel = new JPanel(new BorderLayout());
         JButton addZimmerButton = new JButton("Zimmer hinzufügen");
-        JTable zimmerTabelle = new JTable();
-        zimmerModel = new DefaultTableModel(new String[]{"Nr.", "Kategorie", "Preis", "Verfügbar"}, 0);
+        JButton reinigenZimmerButton = new JButton("Zimmer reinigen");
+        zimmerTabelle = new JTable();
+        zimmerModel = new DefaultTableModel(new String[]{"Nr.", "Kategorie", "Preis", "Verfügbar", "Gereinigt"}, 0);
         zimmerTabelle.setModel(zimmerModel);
         zimmerPanel.add(new JScrollPane(zimmerTabelle), BorderLayout.CENTER);
-        zimmerPanel.add(addZimmerButton, BorderLayout.SOUTH);
+        JPanel zimmerButtonPanel = new JPanel();
+        zimmerButtonPanel.add(addZimmerButton);
+        zimmerButtonPanel.add(reinigenZimmerButton);
+        zimmerPanel.add(zimmerButtonPanel, BorderLayout.SOUTH);
         addZimmerButton.addActionListener(e -> zimmerHinzufuegen());
+        reinigenZimmerButton.addActionListener(e -> reinigenZimmer());
 
         // Buchungen Panel
         JPanel buchungPanel = new JPanel(new BorderLayout());
         JButton addBuchungButton = new JButton("Buchung erstellen");
-        JTable buchungTabelle = new JTable();
-        buchungModel = new DefaultTableModel(new String[]{"Buchungsnr.", "Gast", "Zimmer", "Nächte", "Preis"}, 0);
+        JButton deleteBuchungButton = new JButton("Buchung löschen");
+        JButton genehmigenButton = new JButton("Genehmigen");
+        JButton ablehnenButton = new JButton("Ablehnen");
+
+        buchungTabelle = new JTable();
+        buchungModel = new DefaultTableModel(new String[]{"Buchungsnr.", "Gast", "Zimmer", "Nächte", "Preis", "Status"}, 0);
         buchungTabelle.setModel(buchungModel);
         buchungPanel.add(new JScrollPane(buchungTabelle), BorderLayout.CENTER);
-        buchungPanel.add(addBuchungButton, BorderLayout.SOUTH);
-        addBuchungButton.addActionListener(e -> buchungErstellen());
 
+        JPanel buchungButtonPanel = new JPanel();
+        buchungButtonPanel.add(addBuchungButton);
+        buchungButtonPanel.add(deleteBuchungButton);
+        buchungButtonPanel.add(genehmigenButton);
+        buchungButtonPanel.add(ablehnenButton);
+        buchungPanel.add(buchungButtonPanel, BorderLayout.SOUTH);
+
+        addBuchungButton.addActionListener(e -> buchungErstellen());
+        deleteBuchungButton.addActionListener(e -> buchungLoeschen());
+        genehmigenButton.addActionListener(e -> buchungStatusAendern("Genehmigt"));
+        ablehnenButton.addActionListener(e -> buchungStatusAendern("Abgelehnt"));
+
+        // Genehmigte Buchungen Panel
+        JPanel genehmigtePanel = new JPanel(new BorderLayout());
+        genehmigteBuchungenTabelle = new JTable();
+        genehmigteBuchungenModel = new DefaultTableModel(new String[]{"Buchungsnr.", "Gast", "Zimmer", "Nächte", "Preis", "Status"}, 0);
+        genehmigteBuchungenTabelle.setModel(genehmigteBuchungenModel);
+        genehmigtePanel.add(new JScrollPane(genehmigteBuchungenTabelle), BorderLayout.CENTER);
+
+        // Abgelehnte Buchungen Panel
+        JPanel abgelehntePanel = new JPanel(new BorderLayout());
+        abgelehnteBuchungenTabelle = new JTable();
+        abgelehnteBuchungenModel = new DefaultTableModel(new String[]{"Buchungsnr.", "Gast", "Zimmer", "Nächte", "Preis", "Status"}, 0);
+        abgelehnteBuchungenTabelle.setModel(abgelehnteBuchungenModel);
+        abgelehntePanel.add(new JScrollPane(abgelehnteBuchungenTabelle), BorderLayout.CENTER);
+
+        // Tabs
         tabbedPane.addTab("Gäste", gaestePanel);
         tabbedPane.addTab("Zimmer", zimmerPanel);
         tabbedPane.addTab("Buchungen", buchungPanel);
+        tabbedPane.addTab("Genehmigte Buchungen", genehmigtePanel);
+        tabbedPane.addTab("Abgelehnte Buchungen", abgelehntePanel);
 
         add(tabbedPane, BorderLayout.CENTER);
         setVisible(true);
@@ -78,11 +114,9 @@ public class HotelGui extends JFrame {
         int option = JOptionPane.showConfirmDialog(null, fields, "Gast hinzufügen", JOptionPane.OK_CANCEL_OPTION);
         if (option == JOptionPane.OK_OPTION) {
             int id = gaesteListe.size() + 1;
-            int alter = Integer.parseInt(alterField.getText());
-            String email = emailField.getText();
-            Gast gast = new Gast(id, nameField.getText(), alter, email, "N/A");
+            Gast gast = new Gast(id, nameField.getText(), Integer.parseInt(alterField.getText()), emailField.getText(), "N/A");
             gaesteListe.add(gast);
-            gaesteModel.addRow(new Object[]{id, nameField.getText(), alter, email});
+            gaesteModel.addRow(new Object[]{id, gast.getName(), gast.getAlter(), gast.getEmail()});
         }
     }
 
@@ -99,12 +133,12 @@ public class HotelGui extends JFrame {
 
     private void zimmerHinzufuegen() {
         JTextField nummerField = new JTextField();
-        JTextField kategorieField = new JTextField();
         JTextField preisField = new JTextField();
+        JComboBox<String> kategorieBox = new JComboBox<>(new String[]{"Suite", "Deluxe", "Standard"});
 
         Object[] fields = {
                 "Zimmernummer:", nummerField,
-                "Kategorie:", kategorieField,
+                "Kategorie:", kategorieBox,
                 "Preis pro Nacht:", preisField
         };
 
@@ -112,23 +146,31 @@ public class HotelGui extends JFrame {
         if (option == JOptionPane.OK_OPTION) {
             int nummer = Integer.parseInt(nummerField.getText());
             float preis = Float.parseFloat(preisField.getText());
-            Zimmer zimmer = new Zimmer(nummer, true, preis, kategorieField.getText());
+            String kategorie = (String) kategorieBox.getSelectedItem();
+
+            Zimmer zimmer = new Zimmer(nummer, true, preis, kategorie);
             zimmerListe.add(zimmer);
-            zimmerModel.addRow(new Object[]{nummer, kategorieField.getText(), preis, "Ja"});
+            zimmerModel.addRow(new Object[]{nummer, kategorie, preis, "Ja", "Nein"});
+        }
+    }
+
+    private void reinigenZimmer() {
+        int selectedRow = zimmerTabelle.getSelectedRow();
+        if (selectedRow != -1) {
+            zimmerModel.setValueAt("Ja", selectedRow, 4);
+        } else {
+            JOptionPane.showMessageDialog(null, "Bitte wählen Sie ein Zimmer aus!");
         }
     }
 
     private void buchungErstellen() {
         if (gaesteListe.isEmpty() || zimmerListe.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "Es müssen mindestens ein Gast und ein Zimmer existieren!");
+            JOptionPane.showMessageDialog(null, "Bitte zuerst Gäste und Zimmer hinzufügen!");
             return;
         }
 
-        String[] gaesteNamen = gaesteListe.stream().map(Gast::getName).toArray(String[]::new);
-        String[] zimmerNummern = zimmerListe.stream().map(z -> "Zimmer " + z.getNummer()).toArray(String[]::new);
-
-        JComboBox<String> gastBox = new JComboBox<>(gaesteNamen);
-        JComboBox<String> zimmerBox = new JComboBox<>(zimmerNummern);
+        JComboBox<String> gastBox = new JComboBox<>(gaesteListe.stream().map(Gast::getName).toArray(String[]::new));
+        JComboBox<String> zimmerBox = new JComboBox<>(zimmerListe.stream().map(z -> z.getNummer() + " (" + z.getKategorie() + ")").toArray(String[]::new));
         JTextField naechteField = new JTextField();
 
         Object[] fields = {
@@ -145,11 +187,39 @@ public class HotelGui extends JFrame {
 
             Gast gast = gaesteListe.get(gastIndex);
             Zimmer zimmer = zimmerListe.get(zimmerIndex);
-            float gesamtPreis = zimmer.getPPNacht() * naechte;
+            float preis = zimmer.getPPNacht() * naechte;
 
-            Buchung buchung = new Buchung(buchungsListe.size() + 1, new Datum(new java.util.Date()), naechte, gesamtPreis, "Bestätigt", "Kreditkarte");
+            Buchung buchung = new Buchung(buchungsListe.size() + 1, new Datum(new Date()), naechte, preis, "Offen", "Kreditkarte");
             buchungsListe.add(buchung);
-            buchungModel.addRow(new Object[]{buchung.getBuchungsnummer(), gast.getName(), zimmer.getNummer(), naechte, gesamtPreis});
+
+            buchungModel.addRow(new Object[]{buchung.getBuchungsnummer(), gast.getName(), zimmer.getNummer(), naechte, preis, buchung.getStatus()});
+        }
+    }
+
+    private void buchungLoeschen() {
+        int selectedRow = buchungTabelle.getSelectedRow();
+        if (selectedRow != -1) {
+            int buchungsnummer = (int) buchungModel.getValueAt(selectedRow, 0);
+            buchungsListe.removeIf(b -> b.getBuchungsnummer() == buchungsnummer);
+            buchungModel.removeRow(selectedRow);
+        }
+    }
+
+    private void buchungStatusAendern(String status) {
+        int selectedRow = buchungTabelle.getSelectedRow();
+        if (selectedRow != -1) {
+            int buchungsnummer = (int) buchungModel.getValueAt(selectedRow, 0);
+            Buchung buchung = buchungsListe.stream().filter(b -> b.getBuchungsnummer() == buchungsnummer).findFirst().orElse(null);
+
+            if (buchung != null) {
+                buchung.setStatus(status);
+                buchungModel.setValueAt(status, selectedRow, 5);
+
+                DefaultTableModel zielModel = status.equals("Genehmigt") ? genehmigteBuchungenModel : abgelehnteBuchungenModel;
+                zielModel.addRow(new Object[]{
+                        buchung.getBuchungsnummer(), buchung.getDatum().toString(), "---", buchung.getAnzNächte(), buchung.getGesPreis(), status
+                });
+            }
         }
     }
 
