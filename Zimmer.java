@@ -1,4 +1,8 @@
-public class Zimmer {
+import java.io.Serializable;
+
+public class Zimmer implements Serializable {
+    private static final long serialVersionUID = 1L; // Add a unique ID for serialization
+
     private int nummer;
     private boolean verfuegbar;
     private float pPNacht;

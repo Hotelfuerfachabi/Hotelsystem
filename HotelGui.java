@@ -16,48 +16,202 @@ public class HotelGui extends JFrame {
     private JTable gaesteTabelle, zimmerTabelle, buchungTabelle, genehmigteBuchungenTabelle, abgelehnteBuchungenTabelle;
 
     private final String SAVE_FILE = "hotel_data.ser";
+    private final String HOTEL_SAVE_FILE = "selected_hotel.ser"; // File to save the selected hotel
 
-    public HotelGui() {
-        setTitle("Hotel Verwaltung");
-        setSize(1000, 700);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout());
+    private Hotel selectedHotel; // Field for the selected hotel
 
-        // Lade Daten aus Datei
-        ladeDaten();
+public HotelGui() {
+    setTitle("Hotel Verwaltung");
+    setSize(1200, 800); // Increased size for better spacing
+    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    setLayout(new BorderLayout());
 
-        JTabbedPane tabbedPane = new JTabbedPane();
+    // Load data from file first
+    ladeDaten();
+
+    // Select or create a hotel if none is loaded
+    hotelAuswahl();
+
+    if (selectedHotel == null) {
+        JOptionPane.showMessageDialog(this, "Kein Hotel ausgewählt. Bitte ein Hotel erstellen oder auswählen.");
+        System.exit(0); // Exit if no hotel is selected
+    }
+
+    JTabbedPane tabbedPane = new JTabbedPane();
+
+    // Hotel Panel
+    JPanel hotelPanel = new JPanel(new BorderLayout(10, 10)); // Added padding
+    JPanel hotelFormPanel = new JPanel(new GridLayout(5, 2, 10, 10)); // Added spacing between components
+    JPanel hotelButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10)); // Centered buttons with spacing
+
+    JLabel nameLabel = new JLabel("Name:");
+    JLabel ortLabel = new JLabel("Ort:");
+    JLabel sterneLabel = new JLabel("Sterne:");
+    JLabel anzZimmerLabel = new JLabel("Anzahl Zimmer:");
+    JTextField nameField = new JTextField(selectedHotel.getName());
+    JTextField ortField = new JTextField(selectedHotel.getOrt());
+    JTextField sterneField = new JTextField(String.valueOf(selectedHotel.getSterne()));
+    JTextField anzZimmerField = new JTextField(String.valueOf(selectedHotel.getAnzZimmer()));
+    JButton saveHotelButton = new JButton("Speichern");
+    JButton createHotelButton = new JButton("Hotel erstellen");
+    JButton deleteHotelButton = new JButton("Hotel löschen");
+    JButton loadHotelDataButton = new JButton("Daten laden");
+
+    hotelFormPanel.add(nameLabel);
+    hotelFormPanel.add(nameField);
+    hotelFormPanel.add(ortLabel);
+    hotelFormPanel.add(ortField);
+    hotelFormPanel.add(sterneLabel);
+    hotelFormPanel.add(sterneField);
+    hotelFormPanel.add(anzZimmerLabel);
+    hotelFormPanel.add(anzZimmerField);
+
+    hotelButtonPanel.add(createHotelButton);
+    hotelButtonPanel.add(deleteHotelButton);
+    hotelButtonPanel.add(saveHotelButton);
+    hotelButtonPanel.add(loadHotelDataButton);
+
+    hotelPanel.add(hotelFormPanel, BorderLayout.CENTER);
+    hotelPanel.add(hotelButtonPanel, BorderLayout.SOUTH);
+
+    JComboBox<String> hotelDropdown = new JComboBox<>();
+    updateHotelDropdown(hotelDropdown);
+
+    hotelDropdown.addActionListener(e -> {
+        String selectedHotelName = (String) hotelDropdown.getSelectedItem();
+        if (selectedHotelName != null) {
+            for (Hotel hotel : getAvailableHotels()) {
+                if (hotel.getName().equals(selectedHotelName)) {
+                    selectedHotel = hotel;
+
+                    // Load the selected hotel's data
+                    loadHotelData(selectedHotel);
+
+                    // Update the fields with the selected hotel's details
+                    nameField.setText(selectedHotel.getName());
+                    ortField.setText(selectedHotel.getOrt());
+                    sterneField.setText(String.valueOf(selectedHotel.getSterne()));
+                    anzZimmerField.setText(String.valueOf(selectedHotel.getAnzZimmer()));
+
+                    // Clear existing table data
+                    clearTableData();
+
+                    // Refresh the tables with the loaded data
+                    datenInTabelleLaden();
+
+                    JOptionPane.showMessageDialog(this, "Daten für das Hotel \"" + selectedHotel.getName() + "\" wurden geladen.");
+                    break;
+                }
+            }
+        }
+    });
+
+    createHotelButton.addActionListener(e -> {
+        JTextField newNameField = new JTextField();
+        JTextField newOrtField = new JTextField();
+        JTextField newSterneField = new JTextField();
+        JTextField newAnzZimmerField = new JTextField();
+        Object[] inputs = {
+            "Hotel Name:", newNameField,
+            "Ort:", newOrtField,
+            "Sterne:", newSterneField,
+            "Anzahl Zimmer:", newAnzZimmerField
+        };
+
+        int option = JOptionPane.showConfirmDialog(null, inputs, "Neues Hotel erstellen", JOptionPane.OK_CANCEL_OPTION);
+        if (option == JOptionPane.OK_OPTION) {
+            ArrayList<Hotel> hotels = getAvailableHotels();
+            Hotel newHotel = new Hotel(hotels.size() + 1, newNameField.getText(), newOrtField.getText(),
+                    Integer.parseInt(newSterneField.getText()), Integer.parseInt(newAnzZimmerField.getText()));
+            hotels.add(newHotel);
+            saveAvailableHotels(hotels);
+
+            // Update dropdown menu
+            updateHotelDropdown(hotelDropdown);
+            JOptionPane.showMessageDialog(this, "Neues Hotel erstellt!");
+        }
+    });
+
+    deleteHotelButton.addActionListener(e -> {
+        if (selectedHotel == null) {
+            JOptionPane.showMessageDialog(this, "Kein Hotel ausgewählt, das gelöscht werden kann.");
+            return;
+        }
+
+        int confirm = JOptionPane.showConfirmDialog(this, "Möchten Sie das aktuelle Hotel wirklich löschen?", "Hotel löschen", JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            ArrayList<Hotel> hotels = getAvailableHotels();
+            hotels.removeIf(hotel -> hotel.getId() == selectedHotel.getId()); // Remove the selected hotel by ID
+            saveAvailableHotels(hotels);
+
+            selectedHotel = null; // Clear the selected hotel
+            updateHotelDropdown(hotelDropdown); // Refresh the dropdown menu
+
+            JOptionPane.showMessageDialog(this, "Hotel gelöscht. Bitte ein neues Hotel auswählen oder erstellen.");
+        }
+    });
+
+    saveHotelButton.addActionListener(e -> {
+        if (selectedHotel == null) {
+            JOptionPane.showMessageDialog(this, "Kein Hotel ausgewählt, das bearbeitet werden kann.");
+            return;
+        }
+
+        selectedHotel.setName(nameField.getText());
+        selectedHotel.setOrt(ortField.getText());
+        selectedHotel.setSterne(Integer.parseInt(sterneField.getText()));
+        selectedHotel.setAnzZimmer(Integer.parseInt(anzZimmerField.getText()));
+
+        // Save the updated hotel
+        saveSelectedHotel();
+        JOptionPane.showMessageDialog(this, "Hotelinformationen gespeichert!");
+    });
+
+    JPanel hotelDropdownPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10)); // Added spacing
+    hotelDropdownPanel.add(new JLabel("Hotel auswählen:"));
+    hotelDropdownPanel.add(hotelDropdown);
+    hotelPanel.add(hotelDropdownPanel, BorderLayout.NORTH);
+
+    tabbedPane.addTab("Hotel", hotelPanel);
 
         // Gäste Panel
-        JPanel gaestePanel = new JPanel(new BorderLayout());
+        JPanel gaestePanel = new JPanel(new BorderLayout(10, 10)); // Added padding
         gaesteModel = new DefaultTableModel(new String[]{"ID", "Name", "Alter", "E-Mail", "Telefon"}, 0);
         gaesteTabelle = new JTable(gaesteModel);
         JButton addGastButton = new JButton("Gast hinzufügen");
         JButton deleteGastButton = new JButton("Gast löschen");
-        addGastButton.addActionListener(e -> gastHinzufuegen());
-        deleteGastButton.addActionListener(e -> gastLoeschen());
-        JPanel gastBtnPanel = new JPanel();
+        JPanel gastBtnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10)); // Centered buttons with spacing
         gastBtnPanel.add(addGastButton);
         gastBtnPanel.add(deleteGastButton);
         gaestePanel.add(new JScrollPane(gaesteTabelle), BorderLayout.CENTER);
         gaestePanel.add(gastBtnPanel, BorderLayout.SOUTH);
 
+        addGastButton.addActionListener(e -> gastHinzufuegen());
+
         // Zimmer Panel
-        JPanel zimmerPanel = new JPanel(new BorderLayout());
+        JPanel zimmerPanel = new JPanel(new BorderLayout(10, 10)); // Added padding
         zimmerModel = new DefaultTableModel(new String[]{"Nr.", "Kategorie", "Preis", "Verfügbar", "Gereinigt"}, 0);
         zimmerTabelle = new JTable(zimmerModel);
         JButton addZimmerButton = new JButton("Zimmer hinzufügen");
         JButton reinigenZimmerButton = new JButton("Zimmer reinigen");
+        JButton deleteZimmerButton = new JButton("Zimmer löschen");
+        JButton adjustCategoryPriceButton = new JButton("Kategoriepreis anpassen"); // New button for adjusting category prices
+
         addZimmerButton.addActionListener(e -> zimmerHinzufuegen());
         reinigenZimmerButton.addActionListener(e -> reinigenZimmer());
-        JPanel zimmerBtnPanel = new JPanel();
+        deleteZimmerButton.addActionListener(e -> zimmerLoeschen());
+        adjustCategoryPriceButton.addActionListener(e -> kategoriePreisAnpassen()); // Add action listener for category price adjustment
+
+        JPanel zimmerBtnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10)); // Centered buttons with spacing
         zimmerBtnPanel.add(addZimmerButton);
         zimmerBtnPanel.add(reinigenZimmerButton);
+        zimmerBtnPanel.add(deleteZimmerButton);
+        zimmerBtnPanel.add(adjustCategoryPriceButton); // Add the new button to the panel
         zimmerPanel.add(new JScrollPane(zimmerTabelle), BorderLayout.CENTER);
         zimmerPanel.add(zimmerBtnPanel, BorderLayout.SOUTH);
 
         // Buchung Panel
-        JPanel buchungPanel = new JPanel(new BorderLayout());
+        JPanel buchungPanel = new JPanel(new BorderLayout(10, 10)); // Added padding
         buchungModel = new DefaultTableModel(new String[]{"Nr.", "Gast", "Zimmer", "Nächte", "Preis", "Status"}, 0);
         buchungTabelle = new JTable(buchungModel);
         JButton addBuchungButton = new JButton("Buchung hinzufügen");
@@ -68,7 +222,7 @@ public class HotelGui extends JFrame {
         deleteBuchungButton.addActionListener(e -> buchungLoeschen());
         genehmigenButton.addActionListener(e -> buchungStatusAendern("Genehmigt"));
         ablehnenButton.addActionListener(e -> buchungStatusAendern("Abgelehnt"));
-        JPanel buchungBtnPanel = new JPanel();
+        JPanel buchungBtnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10)); // Centered buttons with spacing
         buchungBtnPanel.add(addBuchungButton);
         buchungBtnPanel.add(deleteBuchungButton);
         buchungBtnPanel.add(genehmigenButton);
@@ -104,27 +258,154 @@ public class HotelGui extends JFrame {
 
         // Fenster schließen => speichern
         addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                speichereDaten();
-            }
-        });
+        public void windowClosing(WindowEvent e) {
+            speichereDaten();
+        }
+    });
 
         datenInTabelleLaden();
         setVisible(true);
     }
 
-    private void gastHinzufuegen() {
-        JTextField name = new JTextField();
-        JTextField alter = new JTextField();
-        JTextField email = new JTextField();
-        JTextField telefon = new JTextField();
-        Object[] inputs = {"Name:", name, "Alter:", alter, "E-Mail:", email, "Telefon:", telefon};
-        if (JOptionPane.showConfirmDialog(null, inputs, "Neuer Gast", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-            Gast g = new Gast(gaesteListe.size() + 1, name.getText(), Integer.parseInt(alter.getText()), email.getText(), telefon.getText());
-            gaesteListe.add(g);
-            gaesteModel.addRow(new Object[]{g.getGastID(), g.getName(), g.getAlter(), g.getEmail(), g.getTelefon()});
+private void hotelAuswahl() {
+        if (selectedHotel != null) {
+            // If a hotel is already saved, skip selection
+            return;
+        }
+
+        JTextField nameField = new JTextField();
+        JTextField ortField = new JTextField();
+        JTextField sterneField = new JTextField();
+        JTextField anzZimmerField = new JTextField();
+        Object[] inputs = {
+            "Hotel Name:", nameField,
+            "Ort:", ortField,
+            "Sterne:", sterneField,
+            "Anzahl Zimmer:", anzZimmerField
+        };
+
+     int option = JOptionPane.showConfirmDialog(null, inputs, "Hotel auswählen oder erstellen", JOptionPane.OK_CANCEL_OPTION);
+        if (option == JOptionPane.OK_OPTION) {
+            selectedHotel = new Hotel(1, nameField.getText(), ortField.getText(), Integer.parseInt(sterneField.getText()), Integer.parseInt(anzZimmerField.getText()));
+
+            // Save the selected hotel
+            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(HOTEL_SAVE_FILE))) {
+                oos.writeObject(selectedHotel);
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this, "Fehler beim Speichern des Hotels: " + e.getMessage());
+            }
+        } else {
+            System.exit(0); // Exit if no hotel is selected
         }
     }
+
+private void updateHotelDropdown(JComboBox<String> hotelDropdown) {
+    hotelDropdown.removeAllItems();
+    for (Hotel hotel : getAvailableHotels()) {
+        hotelDropdown.addItem(hotel.getName());
+    }
+}
+
+private void saveSelectedHotel() {
+    try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(HOTEL_SAVE_FILE))) {
+        oos.writeObject(selectedHotel);
+    } catch (IOException e) {
+        JOptionPane.showMessageDialog(this, "Fehler beim Speichern des Hotels: " + e.getMessage());
+    }
+}
+
+private ArrayList<Hotel> getAvailableHotels() {
+    ArrayList<Hotel> hotels = new ArrayList<>();
+    try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("hotels.ser"))) {
+        hotels = (ArrayList<Hotel>) ois.readObject();
+    } catch (Exception e) {
+        hotels = new ArrayList<>(); // Return an empty list if no hotels are saved
+    }
+    return hotels;
+}
+
+private void saveAvailableHotels(ArrayList<Hotel> hotels) {
+    try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("hotels.ser"))) {
+        oos.writeObject(hotels);
+    } catch (IOException e) {
+        JOptionPane.showMessageDialog(this, "Fehler beim Speichern der Hotels: " + e.getMessage());
+    }
+}
+
+private void loadHotelData(Hotel hotel) {
+    String hotelDataFile = "hotel_" + hotel.getId() + "_data.ser"; // Unique file for each hotel
+    try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(hotelDataFile))) {
+        gaesteListe = (ArrayList<Gast>) ois.readObject();
+        zimmerListe = (ArrayList<Zimmer>) ois.readObject();
+        buchungsListe = (ArrayList<Buchung>) ois.readObject();
+    } catch (Exception e) {
+        gaesteListe = new ArrayList<>();
+        zimmerListe = new ArrayList<>();
+        buchungsListe = new ArrayList<>();
+        JOptionPane.showMessageDialog(this, "Keine gespeicherten Daten für das Hotel \"" + hotel.getName() + "\" gefunden.");
+    }
+}
+
+private void saveHotelData(Hotel hotel) {
+    String hotelDataFile = "hotel_" + hotel.getId() + "_data.ser"; // Unique file for each hotel
+    try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(hotelDataFile))) {
+        oos.writeObject(gaesteListe);
+        oos.writeObject(zimmerListe);
+        oos.writeObject(new ArrayList<>(buchungsListe)); // Ensure all objects in buchungsListe are serializable
+    } catch (IOException e) {
+        JOptionPane.showMessageDialog(this, "Fehler beim Speichern der Hoteldaten: " + e.getMessage());
+    }
+}
+
+private void clearTableData() {
+    // Clear all rows from the tables
+    gaesteModel.setRowCount(0);
+    zimmerModel.setRowCount(0);
+    buchungModel.setRowCount(0);
+    genehmigteBuchungenModel.setRowCount(0);
+    abgelehnteBuchungenModel.setRowCount(0);
+}
+
+private void gastHinzufuegen() {
+    if (selectedHotel == null) {
+        JOptionPane.showMessageDialog(this, "Bitte wählen Sie ein Hotel aus, bevor Sie einen Gast hinzufügen.");
+        return;
+    }
+
+    JTextField name = new JTextField();
+    JTextField alter = new JTextField();
+    JTextField email = new JTextField();
+    JTextField telefon = new JTextField(); // Ensure the JTextField is editable and initialized correctly
+    telefon.setEditable(true); // Explicitly set the field to be editable
+
+    Object[] inputs = {"Name:", name, "Alter:", alter, "E-Mail:", email, "Telefon:", telefon};
+
+    if (JOptionPane.showConfirmDialog(null, inputs, "Neuer Gast", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+        try {
+            String gastName = name.getText().trim();
+            int gastAlter = Integer.parseInt(alter.getText().trim());
+            String gastEmail = email.getText().trim();
+            String gastTelefon = telefon.getText().trim();
+
+            if (gastName.isEmpty() || gastEmail.isEmpty() || gastTelefon.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Bitte füllen Sie alle Felder aus.");
+                return;
+            }
+
+            if (!gastTelefon.matches("\\+?[0-9\\- ]+")) {
+                JOptionPane.showMessageDialog(this, "Bitte geben Sie eine gültige Telefonnummer ein.");
+                return;
+            }
+
+            Gast g = new Gast(gaesteListe.size() + 1, gastName, gastAlter, gastEmail, gastTelefon);
+            gaesteListe.add(g);
+            gaesteModel.addRow(new Object[]{g.getGastID(), g.getName(), g.getAlter(), g.getEmail(), g.getTelefon()});
+            JOptionPane.showMessageDialog(this, "Gast erfolgreich hinzugefügt.");
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Bitte geben Sie ein gültiges Alter ein.");
+        }
+    }
+}
 
     private void gastLoeschen() {
         int row = gaesteTabelle.getSelectedRow();
@@ -150,6 +431,18 @@ public class HotelGui extends JFrame {
         int row = zimmerTabelle.getSelectedRow();
         if (row != -1) {
             zimmerModel.setValueAt("Ja", row, 4);
+        }
+    }
+
+    private void zimmerLoeschen() {
+        int row = zimmerTabelle.getSelectedRow();
+        if (row != -1) {
+            int zimmerNummer = (int) zimmerModel.getValueAt(row, 0); // Get the room number
+            zimmerListe.removeIf(z -> z.getNummer() == zimmerNummer); // Remove the room from the list
+            zimmerModel.removeRow(row); // Remove the row from the table
+            JOptionPane.showMessageDialog(this, "Zimmer gelöscht.");
+        } else {
+            JOptionPane.showMessageDialog(this, "Bitte wählen Sie ein Zimmer aus, das gelöscht werden soll.");
         }
     }
 
@@ -212,7 +505,7 @@ public class HotelGui extends JFrame {
         }
     }
 
-    private void datenInTabelleLaden() {
+      private void datenInTabelleLaden() {
         for (Gast g : gaesteListe) {
             gaesteModel.addRow(new Object[]{g.getGastID(), g.getName(), g.getAlter(), g.getEmail(), g.getTelefon()});
         }
@@ -233,12 +526,16 @@ public class HotelGui extends JFrame {
     }
 
     private void speichereDaten() {
+        if (selectedHotel != null) {
+            saveHotelData(selectedHotel); // Save the current hotel's data
+        }
+
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(SAVE_FILE))) {
             oos.writeObject(gaesteListe);
             oos.writeObject(zimmerListe);
-            oos.writeObject(buchungsListe);
+            oos.writeObject(new ArrayList<>(buchungsListe)); // Ensure all objects in buchungsListe are serializable
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Fehler beim Speichern: " + e.getMessage());
+            JOptionPane.showMessageDialog(this, "Fehler beim Speichern der allgemeinen Daten: " + e.getMessage());
         }
     }
 
@@ -251,10 +548,57 @@ public class HotelGui extends JFrame {
             gaesteListe = new ArrayList<>();
             zimmerListe = new ArrayList<>();
             buchungsListe = new ArrayList<>();
+            System.out.println("Keine allgemeinen Daten gefunden. Initialisiere leere Listen.");
+        }
+
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(HOTEL_SAVE_FILE))) {
+            selectedHotel = (Hotel) ois.readObject();
+            if (selectedHotel != null) {
+                loadHotelData(selectedHotel); // Load data for the selected hotel
+            } else {
+                System.out.println("Kein gespeichertes Hotel gefunden.");
+            }
+        } catch (FileNotFoundException e) {
+            System.out.println("Keine gespeicherten Hotelinformationen gefunden. Bitte ein neues Hotel erstellen.");
+            selectedHotel = null;
+        } catch (Exception e) {
+            System.out.println("Fehler beim Laden der Hotelinformationen: " + e.getMessage());
+            selectedHotel = null;
+        }
+    }
+
+    private void kategoriePreisAnpassen() {
+        JComboBox<String> kategorieBox = new JComboBox<>(new String[]{"Standard", "Deluxe", "Suite"});
+        JTextField newPriceField = new JTextField();
+        Object[] inputs = {"Kategorie auswählen:", kategorieBox, "Neuer Preis:", newPriceField};
+
+        int option = JOptionPane.showConfirmDialog(null, inputs, "Kategoriepreis anpassen", JOptionPane.OK_CANCEL_OPTION);
+        if (option == JOptionPane.OK_OPTION) {
+            try {
+                String selectedKategorie = (String) kategorieBox.getSelectedItem();
+                float newPrice = Float.parseFloat(newPriceField.getText().trim());
+
+                for (Zimmer z : zimmerListe) {
+                    if (z.getKategorie().equals(selectedKategorie)) {
+                        z.setPPNacht(newPrice); // Update the price in the Zimmer object
+                    }
+                }
+
+                // Update the table to reflect the new prices
+                for (int i = 0; i < zimmerModel.getRowCount(); i++) {
+                    if (zimmerModel.getValueAt(i, 1).equals(selectedKategorie)) {
+                        zimmerModel.setValueAt(newPrice, i, 2);
+                    }
+                }
+
+                JOptionPane.showMessageDialog(this, "Preise für Kategorie \"" + selectedKategorie + "\" erfolgreich angepasst.");
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Bitte geben Sie einen gültigen Preis ein.");
+            }
         }
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new HotelGui());
+        SwingUtilities.invokeLater(() -> new LoginGui()); // Ensure LoginGui is launched first
     }
 }

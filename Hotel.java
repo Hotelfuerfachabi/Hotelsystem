@@ -1,38 +1,60 @@
-import java.util.ArrayList;
-import java.util.List;
+import java.io.Serializable;
 
-public class Hotel {
-    private int hotelID;
+public class Hotel implements Serializable {
+    private static final long serialVersionUID = 1L; // Add a unique ID for serialization
+
+    private int id;
     private String name;
     private String ort;
     private int sterne;
     private int anzZimmer;
-    private List<Zimmer> zimmerListe = new ArrayList<>();
 
-    public Hotel(int hotelID, String name, String ort, int sterne, int anzZimmer) {
-        this.hotelID = hotelID;
+    public Hotel(int id, String name, String ort, int sterne, int anzZimmer) {
+        this.id = id;
         this.name = name;
         this.ort = ort;
         this.sterne = sterne;
         this.anzZimmer = anzZimmer;
     }
 
-    public int getHotelID() { return hotelID; }
-    public String getName() { return name; }
-    public String getOrt() { return ort; }
-    public int getSterne() { return sterne; }
-    public int getAnzZimmer() { return anzZimmer; }
+    // Getters and setters
+    public int getId() {
+        return id;
+    }
 
-    public void setName(String name) { this.name = name; }
-    public void setOrt(String ort) { this.ort = ort; }
-    public void setSterne(int sterne) { this.sterne = sterne; }
-    public void setAnzZimmer(int anz) { this.anzZimmer = anz; }
+    public void setId(int id) {
+        this.id = id;
+    }
 
-    public float berechneAuslastung() {
-        int belegteZimmer = 0;
-        for (Zimmer z : zimmerListe) {
-            if (!z.isVerfuegbar()) belegteZimmer++;
-        }
-        return (float) belegteZimmer / anzZimmer * 100;
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getOrt() {
+        return ort;
+    }
+
+    public void setOrt(String ort) {
+        this.ort = ort;
+    }
+
+    public int getSterne() {
+        return sterne;
+    }
+
+    public void setSterne(int sterne) {
+        this.sterne = sterne;
+    }
+
+    public int getAnzZimmer() {
+        return anzZimmer;
+    }
+
+    public void setAnzZimmer(int anzZimmer) {
+        this.anzZimmer = anzZimmer;
     }
 }

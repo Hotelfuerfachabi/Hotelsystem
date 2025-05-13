@@ -1,7 +1,10 @@
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class Datum {
+public class Datum implements Serializable {
+    private static final long serialVersionUID = 1L; // Add a unique ID for serialization
+
     private Date datum;
 
     public Datum(Date datum) {

@@ -1,4 +1,8 @@
-public class Buchung {
+import java.io.Serializable;
+
+public class Buchung implements Serializable {
+    private static final long serialVersionUID = 1L; // Add a unique ID for serialization
+
     private int buchungsnummer;
     private Datum datum;
     private int anzNächte;
