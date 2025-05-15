@@ -3,7 +3,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class Datum implements Serializable {
-    private static final long serialVersionUID = 1L; // Add a unique ID for serialization
+    private static final long serialVersionUID = 1L; //Fügt eine eindeutige ID für die Serialisierung hinzu
 
     private Date datum;
 

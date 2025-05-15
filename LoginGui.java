@@ -1,4 +1,5 @@
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 public class LoginGui extends JFrame {
@@ -9,29 +10,32 @@ public class LoginGui extends JFrame {
         setTitle("Hotel-System-Management by Rafael und Jonas - Login");
         setSize(450, 350);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout(10, 10)); // Add padding around the layout
+        setLayout(new BorderLayout(10, 10)); // für mehr Platz zwischen den Komponenten
 
         // Header Panel
         JPanel headerPanel = new JPanel();
+        headerPanel.setBackground(new Color(70, 130, 180)); // Moderner blauer Hintergrund
         JLabel headerLabel = new JLabel("Willkommen im Hotel-System-Management");
         headerLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        headerLabel.setForeground(Color.WHITE); // Weißer Text für Kontrast
         headerPanel.add(headerLabel);
 
         // Login Panel
         JPanel loginPanel = new JPanel(new GridBagLayout());
+        loginPanel.setBorder(new EmptyBorder(20, 20, 20, 20)); // für mehr Platz um die Komponenten
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10); // Add spacing between components
+        gbc.insets = new Insets(10, 10, 10, 10); // für mehr Platz zwischen den Komponenten
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         JLabel usernameLabel = new JLabel("Benutzername:");
         JLabel passwordLabel = new JLabel("Passwort:");
         JTextField usernameField = new JTextField();
         JPasswordField passwordField = new JPasswordField();
-        JButton loginButton = new JButton("Anmelden");
-        JButton createUserButton = new JButton("Benutzer erstellen");
-        JButton deleteUserButton = new JButton("Benutzer löschen");
+        JButton loginButton = createModernButton("Anmelden");
+        JButton createUserButton = createModernButton("Benutzer erstellen");
+        JButton deleteUserButton = createModernButton("Benutzer löschen");
 
-        // Add components to the login panel
+        // fügt die Komponenten zum Login-Panel hinzu
         gbc.gridx = 0;
         gbc.gridy = 0;
         loginPanel.add(usernameLabel, gbc);
@@ -61,34 +65,36 @@ public class LoginGui extends JFrame {
 
         // Footer Panel
         JPanel footerPanel = new JPanel();
+        footerPanel.setBackground(new Color(70, 130, 180)); 
         JLabel footerLabel = new JLabel("© 2023 Hotel-System-Management");
         footerLabel.setFont(new Font("Arial", Font.ITALIC, 12));
+        footerLabel.setForeground(Color.WHITE); 
         footerPanel.add(footerLabel);
 
-        // Add panels to the frame
+        // fügt die Panels zum Haupt-Frame hinzu
         add(headerPanel, BorderLayout.NORTH);
         add(loginPanel, BorderLayout.CENTER);
         add(footerPanel, BorderLayout.SOUTH);
 
-        // Action Listener for Login Button
+        // Login Knopf 
         loginButton.addActionListener(e -> {
             String username = usernameField.getText();
             String password = new String(passwordField.getPassword());
             if (loginManager.authenticate(username, password)) {
                 JOptionPane.showMessageDialog(this, "Login erfolgreich!");
-                dispose(); // Close login window
-                SwingUtilities.invokeLater(() -> new HotelGui()); // Open main GUI
+                dispose(); // schließt das Login-Fenster
+                SwingUtilities.invokeLater(() -> new HotelGui()); // öffnet die HotelGui
             } else {
                 JOptionPane.showMessageDialog(this, "Ungültiger Benutzername oder Passwort.");
             }
         });
 
-        // Action Listener for Create User Button
+        // Knopf zum Erstellen eines neuen Benutzers
         createUserButton.addActionListener(e -> {
             try {
                 String[] users = loginManager.getAllUsers();
                 if (users.length > 0) {
-                    // Prompt for the first user's password
+                    // Auswahl des ersten Benutzers
                     JPasswordField passwordFieldPrompt = new JPasswordField();
                     Object[] inputs = {"Passwort des ersten Benutzers eingeben:", passwordFieldPrompt};
                     int option = JOptionPane.showConfirmDialog(this, inputs, "Benutzer erstellen", JOptionPane.OK_CANCEL_OPTION);
@@ -100,11 +106,11 @@ public class LoginGui extends JFrame {
                             return;
                         }
                     } else {
-                        return; // Cancel user creation
+                        return; // Abbrechen, wenn der Benutzer nicht fortfahren möchte
                     }
                 }
 
-                // Proceed with user creation
+                // Fortsetzung mit der Erstellung eines neuen Benutzers
                 String username = JOptionPane.showInputDialog(this, "Benutzername:");
                 String password = JOptionPane.showInputDialog(this, "Passwort:");
                 if (username != null && password != null && !username.isEmpty() && !password.isEmpty()) {
@@ -121,7 +127,7 @@ public class LoginGui extends JFrame {
             }
         });
 
-        // Action Listener for Delete User Button
+        // Löschknopf
         deleteUserButton.addActionListener(e -> {
             String[] users = loginManager.getAllUsers();
             if (users.length == 0) {
@@ -153,13 +159,23 @@ public class LoginGui extends JFrame {
             }
         });
 
-        setVisible(true); // Ensure the window is visible
+        setVisible(true); // Stellt das Fenster sichtbar
+    }
+
+    private JButton createModernButton(String text) {
+        JButton button = new JButton(text);
+        button.setFocusPainted(false);
+        button.setBackground(new Color(100, 149, 237)); // Hellblauer Hintergrund
+        button.setForeground(Color.WHITE); 
+        button.setFont(new Font("Arial", Font.BOLD, 14));
+        button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20)); // Abgerundete Ecken
+        return button;
     }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             try {
-                new LoginGui(); // Launch LoginGui
+                new LoginGui(); // Startet die Login-GUI
             } catch (Exception e) {
                 e.printStackTrace();
             }

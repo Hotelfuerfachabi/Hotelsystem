@@ -1,7 +1,7 @@
 import java.io.Serializable;
 
 public class Buchung implements Serializable {
-    private static final long serialVersionUID = 1L; // Add a unique ID for serialization
+    private static final long serialVersionUID = 1L; // Fügt eine eindeutige ID für die Serialisierung hinzu
 
     private int buchungsnummer;
     private Datum datum;

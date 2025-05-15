@@ -1,7 +1,7 @@
 import java.io.Serializable;
 
 public class Hotel implements Serializable {
-    private static final long serialVersionUID = 1L; // Add a unique ID for serialization
+    private static final long serialVersionUID = 1L; //fügt eine eindeutige ID für die Serialisierung hinzu
 
     private int id;
     private String name;
@@ -17,7 +17,7 @@ public class Hotel implements Serializable {
         this.anzZimmer = anzZimmer;
     }
 
-    // Getters and setters
+    // Getter und setter
     public int getId() {
         return id;
     }
