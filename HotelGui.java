@@ -559,7 +559,7 @@ private void gastHinzufuegen() {
                 System.out.println("Kein gespeichertes Hotel gefunden.");
             }
         } catch (FileNotFoundException e) {
-            System.out.println("Keine gespeicherten Hotelinformationen gefunden. Bitte ein neues Hotel erstellen.");
+            System.out.println("Keine gespeicherten Hotelinformationen gefunden. Bitte ein neues Hotel erstellen!");
             selectedHotel = null;
         } catch (Exception e) {
             System.out.println("Fehler beim Laden der Hotelinformationen: " + e.getMessage());
